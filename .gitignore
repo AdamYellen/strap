@@ -3,6 +3,7 @@
 /.vagrant/
 /bin/*
 !/bin/strap.sh
+!/bin/strap.ps1
 /vendor/
 Vagrantfile
 strap.sh
