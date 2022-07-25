@@ -2,17 +2,6 @@
 
 param($strap_git_name, $strap_git_email, $strap_github_user, $strap_github_token, $strap_ci)
 
-# # Check to see if we are currently running "as Administrator"
-# if (!(Verify-Elevated)) {
-#    $newProcess = new-object System.Diagnostics.ProcessStartInfo "PowerShell";
-#    $newProcess.Arguments = $myInvocation.MyCommand.Definition;
-#    $newProcess.Verb = "runas";
-#    [System.Diagnostics.Process]::Start($newProcess);
-
-#    exit
-# }
-#if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
-
 function Check-Command($cmdname) {
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
 }
@@ -63,6 +52,11 @@ Write-Host "Configuring System..." -ForegroundColor "Yellow"
 ## Background file: C:\someDirectory\someImage.jpg
 ## File Size Limit: 256Kb
 # Set-ItemProperty "HKLM:\Software\Policies\Microsoft\Windows\Personalization" "LockScreenImage" "C:\someDirectory\someImage.jpg"
+if ($strap_git_name -and $strap_git_email)
+{
+    Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticecaption" "Found this computer?"
+    Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticetext" "Please contact $strap_git_name at $strap_git_email."
+}
 
 ###############################################################################
 ### Windows Update & Application Updates                                      #
@@ -98,21 +92,16 @@ Write-Host "Configuring Windows Defender..." -ForegroundColor "Yellow"
 ### Bootstrapping Dependencies                                                #
 ###############################################################################
 
-if (Check-Command -cmdname 'choco')
-{
-    choco upgrade chocolatey | Out-Null
-}
-else
+if (-not (Check-Command -cmdname 'choco'))
 {
     Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 }
+else
+{
+    choco upgrade chocolatey | Out-Null
+}
 
-# Enable Developer Mode
-Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" "AllowDevelopmentWithoutDevLicense" 1
-
-# Bash on Windows
-# Enable-WindowsOptionalFeature -Online -All -FeatureName "Microsoft-Windows-Subsystem-Linux" -NoRestart -WarningAction SilentlyContinue | Out-Null
-
+# Install Git
 choco install git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
