@@ -94,7 +94,7 @@ Write-Host "Configuring Windows Defender..." -ForegroundColor "Yellow"
 
 if (-not (Check-Command -cmdname 'choco'))
 {
-    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) | Out-Null
 }
 else
 {
@@ -102,7 +102,7 @@ else
 }
 
 # Install Git
-choco install git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y
+choco install git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y | Out-Null
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
 # variable and importing the Chocolatey profile module.
@@ -164,17 +164,11 @@ if ($strap_github_user)
     # run_dotfile_scripts script/setup script/bootstrap
     if (Test-Path "$HOME/.dotfiles/script/setup.ps1")
     {
+        Write-Host "Running dotfiles/script/setup.ps1" -ForegroundColor Green
+        Write-Host "------------------------------------" -ForegroundColor Green
         & "$HOME/.dotfiles/script/setup.ps1"
     }
 }
-
-###############################################################################
-### WSL2                                                                      #
-###############################################################################
-
-Write-Host "Installing Windows Subsystem for Linux..." -ForegroundColor "Yellow"
-Write-Host "------------------------------------" -ForegroundColor Green
-wsl --install
 
 ###############################################################################
 ### Updates                                                                   #
@@ -184,12 +178,12 @@ Write-Host "------------------------------------" -ForegroundColor Green
 Install-Module -Name PSWindowsUpdate -Force
 if (-not $strap_ci)
 {
-    Write-Host "Installing updates... (Computer will reboot in minutes...)" -ForegroundColor Green
+    Write-Host "Installing updates... (Computer will reboot when complete...)" -ForegroundColor Green
     Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
 }
 else
 {
-    Write-Host "Skipping updates... (Computer will reboot)" -ForegroundColor Green
+    Write-Host "Skipping updates... (Computer will reboot now)" -ForegroundColor Green
     Restart-Computer
 }
 
