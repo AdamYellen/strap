@@ -1,6 +1,6 @@
 #Requires -RunAsAdministrator
 
-param($strap_git_name, $strap_git_email, $strap_github_user, $strap_github_token)
+param($strap_git_name, $strap_git_email, $strap_github_user, $strap_github_token, $strap_ci)
 
 # # Check to see if we are currently running "as Administrator"
 # if (!(Verify-Elevated)) {
@@ -184,8 +184,8 @@ if ($strap_github_user)
 ###############################################################################
 
 Write-Host "Installing Windows Subsystem for Linux..." -ForegroundColor "Yellow"
-wsl --install
 Write-Host "------------------------------------" -ForegroundColor Green
+wsl --install
 
 ###############################################################################
 ### Updates                                                                   #
@@ -193,8 +193,16 @@ Write-Host "------------------------------------" -ForegroundColor Green
 Write-Host "Checking Windows updates..." -ForegroundColor Green
 Write-Host "------------------------------------" -ForegroundColor Green
 Install-Module -Name PSWindowsUpdate -Force
-Write-Host "Installing updates... (Computer will reboot in minutes...)" -ForegroundColor Green
-Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
+if (-not $strap_ci)
+{
+    Write-Host "Installing updates... (Computer will reboot in minutes...)" -ForegroundColor Green
+    Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
+}
+else
+{
+    Write-Host "Skipping updates... (Computer will reboot)" -ForegroundColor Green
+    Restart-Computer
+}
 
 # Read-Host -Prompt "Setup is done, Windows needs to restart to continue, press [ENTER] to restart computer."
 # Restart-Computer
