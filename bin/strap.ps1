@@ -526,13 +526,15 @@ Set-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock
 
 # Dependencies to continue bootstrapping
 # $Apps = @(
-#     "git",
-#     "powershell-core"
+#     "git"
+# #     "powershell-core"
 # )
 
 # foreach ($app in $Apps) {
 #     choco install $app -y
 # }
+
+choco install git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall
 # variable and importing the Chocolatey profile module.
@@ -541,21 +543,37 @@ $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
 Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 refreshenv
 
-# Write-Host "Setting up Git for Windows..." -ForegroundColor Green
-# Write-Host "------------------------------------" -ForegroundColor Green
-# git config --global user.email "edi.wang@outlook.com"
-# git config --global user.name "Edi Wang"
-# git config --global core.autocrlf true
+# Setup Git configuration.
+Write-Host "Setting up Git for Windows..." -ForegroundColor Green
+Write-Host "------------------------------------" -ForegroundColor Green
+if ($strap_git_name -and !(git config --global user.name))
+{
+    git config --global user.name "$strap_git_name"
+}
+if ($strap_git_email -and !(git config --global user.email))
+{
+    git config --global user.email "$strap_git_email"
+}
+if ($strap_github_username -and ((git config --global github.user) -ne $strap_github_usernam))
+{
+    git config --global github.user "$strap_github_username"
+}
+
+# Squelch git 2.x warning message when pushing
+# if (! (git config push.default))
+# {
+#   git config --global push.default simple
+# }
 
 ###############################################################################
 ### WSL2                                                                      #
 ###############################################################################
 
 Write-Host "Installing Windows Subsystem for Linux..." -ForegroundColor "Yellow"
-wsl --install
+# wsl --install
 Write-Host "------------------------------------" -ForegroundColor Green
 Read-Host -Prompt "Setup is done, Windows needs to restart to continue, press [ENTER] to restart computer."
-Restart-Computer
+# Restart-Computer
 
 # # gsudo
 # PowerShell -Command "Set-ExecutionPolicy RemoteSigned -scope Process; [Net.ServicePointManager]::SecurityProtocol = 'Tls12'; iwr -useb https://raw.githubusercontent.com/gerardog/gsudo/master/installgsudo.ps1 | iex"
@@ -593,6 +611,6 @@ Restart-Computer
 # Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
 
 # -----------------------------------------------------------------------------
-Write-Host "------------------------------------" -ForegroundColor Green
-Read-Host -Prompt "Setup is done, restart is needed, press [ENTER] to restart computer."
+# Write-Host "------------------------------------" -ForegroundColor Green
+# Read-Host -Prompt "Setup is done, restart is needed, press [ENTER] to restart computer."
 # Restart-Computer
