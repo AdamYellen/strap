@@ -1,6 +1,6 @@
 #Requires -RunAsAdministrator
 
-param($strap_git_name, $strap_git_email, $strap_github_user, $strap_github_token, $strap_ci)
+param($strap_git_name, $strap_git_email, $strap_github_user, $strap_github_token, $strap_mobile, $strap_ci)
 
 function Check-Command($cmdname) {
     return [bool](Get-Command -Name $cmdname -ErrorAction SilentlyContinue)
@@ -46,6 +46,7 @@ if ($strap_git_name) {
 ###############################################################################
 ### Lock Screen                                                               #
 ###############################################################################
+Write-Host "Configuring Lock Screen..." -ForegroundColor "Yellow"
 
 ## Enable Custom Background on the Login / Lock Screen
 ## Background file: C:\someDirectory\someImage.jpg
@@ -53,7 +54,12 @@ if ($strap_git_name) {
 # Set-ItemProperty "HKLM:\Software\Policies\Microsoft\Windows\Personalization" "LockScreenImage" "C:\someDirectory\someImage.jpg"
 if ($strap_git_name -and $strap_git_email) {
     Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticecaption" "Found this computer?"
-    Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticetext" "Please contact $strap_git_name at $strap_git_email."
+    if($strap_mobile) {
+        Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticetext" "Please contact $strap_git_name at $strap_mobile"
+    }
+    else {
+        Set-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System" "legalnoticetext" "Please contact $strap_git_name at $strap_git_email."
+    }
 }
 
 ###############################################################################
@@ -89,6 +95,7 @@ Write-Host "Configuring Windows Defender..." -ForegroundColor "Yellow"
 ###############################################################################
 ### Bootstrapping Dependencies                                                #
 ###############################################################################
+Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 
 # Chocolatey
 if (-not (Check-Command -cmdname 'choco')) {
@@ -168,6 +175,7 @@ Install-Module -Name PSWindowsUpdate -Force
 # Tell Windows Store to update (no way to wait for it to complete *sigh*)
 $wmiObj = Get-WmiObject -Namespace "root\cimv2\mdm\dmmap" -Class "MDM_EnterpriseModernAppManagement_AppManagement01"
 $wmiObj.UpdateScanMethod()
+Remove-Variable $wmiObject
 
 if (-not $strap_ci) {
     Write-Host "Installing updates... (Computer will reboot when complete)" -ForegroundColor Red
