@@ -217,6 +217,9 @@ sudo_askpass launchctl load /System/Library/LaunchDaemons/com.apple.alf.agent.pl
 
 if [ -n "$STRAP_GIT_NAME" ] && [ -n "$STRAP_GIT_EMAIL" ]; then
   LOGIN_TEXT=$(escape "Found this computer? Please contact $STRAP_GIT_NAME at $STRAP_GIT_EMAIL.")
+  if [ -n "$STRAP_MOBILE" ]; then
+    LOGIN_TEXT=$(escape "Found this computer? Please contact $STRAP_GIT_NAME at $STRAP_MOBILE")
+  fi
   echo "$LOGIN_TEXT" | grep -q '[()]' && LOGIN_TEXT="'$LOGIN_TEXT'"
   sudo_askpass defaults write /Library/Preferences/com.apple.loginwindow \
     LoginwindowText \
