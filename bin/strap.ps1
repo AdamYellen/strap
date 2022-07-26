@@ -11,17 +11,14 @@ function AddToPath {
         [string]$folder
     )
 
-    Write-Host "Adding $folder to environment variables..." -ForegroundColor Yellow
+    Write-Host "Adding $folder to PATH..." -ForegroundColor Yellow
 
     $currentEnv = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine).Trim(";");
     $addedEnv = $currentEnv + ";$folder"
     $trimmedEnv = (($addedEnv.Split(';') | Select-Object -Unique) -join ";").Trim(";")
-    [Environment]::SetEnvironmentVariable(
-        "Path",
-        $trimmedEnv,
-        [EnvironmentVariableTarget]::Machine)
+    [Environment]::SetEnvironmentVariable("Path", $trimmedEnv, [EnvironmentVariableTarget]::Machine)
 
-    #Write-Host "Reloading environment variables..." -ForegroundColor Green
+    Write-Host "Reloading environment variables..." -ForegroundColor Yellow
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 
@@ -31,18 +28,20 @@ function AddToPath {
 Write-Host "Configuring System..." -ForegroundColor "Yellow"
 
 # Set Computer Name
-# (Get-WmiObject Win32_ComputerSystem).Rename("CHOZO") | Out-Null
+# (Get-WmiObject Win32_ComputerSystem).Rename("COMPUTER") | Out-Null
 # $computerName = Read-Host 'Enter New Computer Name'
 # Write-Host "Renaming this computer to: " $computerName  -ForegroundColor Yellow
 # Rename-Computer -NewName $computerName
 
 ## Set DisplayName for my account. Use only if you are not using a Microsoft Account
-#$myIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
-#$user = Get-WmiObject Win32_UserAccount | Where {$_.Caption -eq $myIdentity.Name}
-#$user.FullName = "Jay Harris"
-#$user.Put() | Out-Null
-#Remove-Variable user
-#Remove-Variable myIdentity
+if ($strap_git_name) {
+    $myIdentity=[System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $user = Get-WmiObject Win32_UserAccount | Where {$_.Caption -eq $myIdentity.Name}
+    $user.FullName = "$strap_git_name"
+    $user.Put() | Out-Null
+    Remove-Variable user
+    Remove-Variable myIdentity
+}
 
 ###############################################################################
 ### Lock Screen                                                               #
@@ -111,7 +110,7 @@ $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
 Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 refreshenv
 
-# Setup Git configuration.
+# Setup Git configuration
 Write-Host "Setting up Git for Windows..." -ForegroundColor Yellow
 if (-not (Check-Command -cmdname 'git')) {
     Write-Host "!! Exiting: Can't find git !!" -ForegroundColor "Red"
@@ -127,14 +126,17 @@ if ($strap_github_user -and ((git config --global github.user) -ne $strap_github
     git config --global github.user "$strap_github_user"
 }
 
-# Setup GitHub HTTPS credentials.
+# Setup GitHub HTTPS credentials
 if ($strap_github_user -and $strap_github_token) {
     Write-Output "protocol=https`nhost=github.com`n`n" | git credential reject
     Write-Output "protocol=https`nhost=github.com`nusername=$strap_github_user`npassword=$strap_github_token`n`n" | git credential approve
 }
 
-# Setup dotfiles
+###############################################################################
+### Dotfiles                                                                  #
+###############################################################################
 if ($strap_github_user) {
+    # Clone/update dotfiles repo
     $DOTFILES_URL="https://github.com/$strap_github_user/dotfiles"
     if (git ls-remote "$DOTFILES_URL") {
         Write-Host "Fetching/Updating $strap_github_user/dotfiles from GitHub..." -ForegroundColor Yellow
@@ -149,7 +151,7 @@ if ($strap_github_user) {
         }
     }
 
-    # run_dotfile_scripts script/setup script/bootstrap
+    # Run our setup script if it exists
     if (Test-Path "$HOME/.dotfiles/script/setup.ps1") {
         Write-Host "Running dotfiles/script/setup.ps1..." -ForegroundColor Yellow
         & "$HOME/.dotfiles/script/setup.ps1"
@@ -159,8 +161,14 @@ if ($strap_github_user) {
 ###############################################################################
 ### Updates                                                                   #
 ###############################################################################
-Write-Host "Checking Windows updates..." -ForegroundColor Yellow
+Write-Host "Checking for Windows updates..." -ForegroundColor Yellow
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 Install-Module -Name PSWindowsUpdate -Force
+
+# Tell Windows Store to update (no way to wait for it to complete *sigh*)
+$wmiObj = Get-WmiObject -Namespace "root\cimv2\mdm\dmmap" -Class "MDM_EnterpriseModernAppManagement_AppManagement01"
+$wmiObj.UpdateScanMethod()
+
 if (-not $strap_ci) {
     Write-Host "Installing updates... (Computer will reboot when complete)" -ForegroundColor Red
     Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
