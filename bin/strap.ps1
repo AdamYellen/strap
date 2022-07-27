@@ -115,6 +115,7 @@ iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
 # Install Git
 # choco upgrade git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y | Out-Null
 scoop install git | Out-Null
+git config --global credential.helper manager-core
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall variable and importing the Chocolatey profile module.
 # $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."   
@@ -127,7 +128,6 @@ if (-not (Check-Command -cmdname 'git')) {
     Write-Host "!! Exiting: Can't find git !!" -ForegroundColor "Red"
     Exit 1
 }
-git config --global credential.helper manager-core
 if ($strap_git_name -and !(git config --global user.name)) {
     git config --global user.name "$strap_git_name"
 }
