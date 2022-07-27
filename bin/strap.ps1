@@ -113,9 +113,8 @@ Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
 
 # Install Git
-# choco upgrade git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y | Out-Null
 scoop install git | Out-Null
-git config --global credential.helper manager-core
+git config --system credential.helper manager-core
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall variable and importing the Chocolatey profile module.
 # $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."   
