@@ -98,24 +98,28 @@ Write-Host "Configuring Windows Defender..." -ForegroundColor "Yellow"
 Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 
 # Chocolatey
-if (-not (Check-Command -cmdname 'choco')) {
-    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) | Out-Null
-}
-else {
-    choco upgrade chocolatey | Out-Null
-}
-if (-not (Check-Command -cmdname 'choco')) {
-    Write-Host "!! Exiting: Can't find Chocolatey !!" -ForegroundColor "Red"
-    Exit 1
-}
+# if (-not (Check-Command -cmdname 'choco')) {
+#     Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) | Out-Null
+# }
+# else {
+#     choco upgrade chocolatey | Out-Null
+# }
+# if (-not (Check-Command -cmdname 'choco')) {
+#     Write-Host "!! Exiting: Can't find Chocolatey !!" -ForegroundColor "Red"
+#     Exit 1
+# }
+
+# Scoop
+iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
 
 # Install Git
-choco upgrade git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y | Out-Null
+# choco upgrade git --params "/GitOnlyOnPath /NoAutoCrlf /NoShellIntegration /SChannel /Symlinks /Editor:VisualStudioCode" -y | Out-Null
+scoop install git | Out-Null
 
 # Make `refreshenv` available right away, by defining the $env:ChocolateyInstall variable and importing the Chocolatey profile module.
-$env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."   
-Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-refreshenv
+# $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."   
+# Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+# refreshenv
 
 # Setup Git configuration
 Write-Host "Setting up Git for Windows..." -ForegroundColor Yellow
@@ -165,6 +169,8 @@ if ($strap_github_user) {
     }
 }
 
+Exit 0
+
 ###############################################################################
 ### Updates                                                                   #
 ###############################################################################
@@ -175,7 +181,7 @@ Install-Module -Name PSWindowsUpdate -Force
 # Tell Windows Store to update (no way to wait for it to complete *sigh*)
 $wmiObj = Get-WmiObject -Namespace "root\cimv2\mdm\dmmap" -Class "MDM_EnterpriseModernAppManagement_AppManagement01"
 $wmiObj.UpdateScanMethod()
-Remove-Variable $wmiObject
+Remove-Variable wmiObject
 
 if (-not $strap_ci) {
     Write-Host "Installing updates... (Computer will reboot when complete)" -ForegroundColor Red
