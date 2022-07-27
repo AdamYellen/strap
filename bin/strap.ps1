@@ -109,7 +109,7 @@ Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 #     Exit 1
 # }
 
-# Scoop
+# Install Scoop
 iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
 
 # Install Git
@@ -127,6 +127,7 @@ if (-not (Check-Command -cmdname 'git')) {
     Write-Host "!! Exiting: Can't find git !!" -ForegroundColor "Red"
     Exit 1
 }
+git config --global credential.helper manager-core
 if ($strap_git_name -and !(git config --global user.name)) {
     git config --global user.name "$strap_git_name"
 }
@@ -169,23 +170,21 @@ if ($strap_github_user) {
     }
 }
 
-Exit 0
-
 ###############################################################################
 ### Updates                                                                   #
 ###############################################################################
 Write-Host "Checking for Windows updates..." -ForegroundColor Yellow
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
 Install-Module -Name PSWindowsUpdate -Force
 
 # Tell Windows Store to update (no way to wait for it to complete *sigh*)
 $wmiObj = Get-WmiObject -Namespace "root\cimv2\mdm\dmmap" -Class "MDM_EnterpriseModernAppManagement_AppManagement01"
-$wmiObj.UpdateScanMethod()
-Remove-Variable wmiObject
+$wmiObj.UpdateScanMethod() | Out-Null
+Remove-Variable wmiObj
 
 if (-not $strap_ci) {
     Write-Host "Installing updates... (Computer will reboot when complete)" -ForegroundColor Red
-    Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot
+    Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot | Out-Null
 }
 else {
     Write-Host "Skipping updates... (Computer will reboot now)" -ForegroundColor Red
