@@ -108,17 +108,23 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
     Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 
     # Install Scoop
-    iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
+    if (-not (Check-Command -cmdname 'scoop')) {
+        iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
+    }
 
     # Install Git
-    scoop install git | Out-Null
-    git config --system credential.helper manager-core
+    if (-not (Check-Command -cmdname 'git')) {
+        scoop install git | Out-Null
+    }
 
     # Setup Git configuration
     Write-Host "Setting up Git for Windows..." -ForegroundColor Yellow
     if (-not (Check-Command -cmdname 'git')) {
         Write-Host "!! Exiting: Can't find git !!" -ForegroundColor "Red"
         Exit 1
+    }
+    if((git config --system credential.helper) -ne "manager-core") {
+        git config --system credential.helper manager-core
     }
     if ($strap_git_name -and !(git config --global user.name)) {
         git config --global user.name "$strap_git_name"
@@ -147,11 +153,11 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
             if (Test-Path "$HOME/.dotfiles") {
                 Push-Location
                 Set-Location "$HOME/.dotfiles"
-                git pull --rebase --autostash
+                git pull --rebase --autostash | Out-Null
                 Pop-Location
             }
             else {
-                git clone "$DOTFILES_URL" "$HOME/.dotfiles"
+                git clone "$DOTFILES_URL" "$HOME/.dotfiles" | Out-Null
             }
         }
 
@@ -167,10 +173,21 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
     ###############################################################################
     Write-Host "Setup stage 2 for next reboot..." -ForegroundColor Yellow
 
-    # Setup a scheduled task that will run on next logon to run strap again with the same args plus -strap_stage 2
+    # Create our stage2 bootstrap
     $stage2CLI = ""
     $stage2CLI += $myinvocation.Line + ' -strap_stage 2'
-    schtasks /create /tn "StrapStage2" /sc onlogon /delay 0000:15 /rl highest /it /tr "powershell.exe -NoExit -File '$stage2CLI'"    <# Action when all if and elseif conditions are false #>
+    $stage2Script = @"
+powershell.exe -NoExit -File $stage2CLI
+"@
+    $stage2File="C:\strap2.ps1"
+    If(Test-Path -Path $stage2File)
+    {
+        Remove-Item $stage2File | Out-Null
+    }
+    $stage2Script | Out-File $stage2File -Encoding ASCII
+    
+    # Setup a scheduled task that will run on next logon to run strap again with the same args plus -strap_stage 2
+    schtasks /create /f /tn "StrapStage2" /sc onlogon /delay 0000:15 /rl highest /it /tr "powershell.exe -NoExit -File $stage2File" | Out-Null
 
     ###############################################################################
     ### Updates                                                                   #
@@ -182,10 +199,11 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
 
     # Windows updates
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
-    Install-Module -Name PSWindowsUpdate -Force
+    Install-Module -Name PSWindowsUpdate -Force | Out-Null
     if (-not $strap_ci) {
         Write-Host "Installing updates... (Computer will reboot when complete)" -ForegroundColor Red
         Get-WindowsUpdate -AcceptAll -Install -ForceInstall -AutoReboot | Out-Null
+        Restart-Computer
     }
     else {
         Write-Host "Skipping updates... (Computer will reboot now)" -ForegroundColor Red
@@ -199,7 +217,8 @@ else {
     Write-Host "Continue strapping..." -ForegroundColor "Yellow"
 
     # Cleanup our scheduled task
-    schtasks /delete /tn "StrapStage2"
+    schtasks /delete /f /tn "StrapStage2" | Out-Null
+    Remove-Item "C:\strap2.ps1" | Out-Null
 
     # Run the strap-after-setup scripts
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
@@ -211,6 +230,10 @@ else {
             & "$HOME/.dotfiles/script/strap-after-setup.ps1"
         }
     }
+
+    
+
+    # Clear our Powershell history
 
     Write-Host "Your system is now Strap'd!" -ForegroundColor "Green"
 }
