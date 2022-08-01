@@ -115,7 +115,7 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
 
     # Install Git
     if (-not (Check-Command -cmdname 'git')) {
-        scoop install git | Out-Null
+        scoop install git 6>&1 | Out-Null
     }
 
     # Setup Git configuration
@@ -219,7 +219,7 @@ else {
 
     # Cleanup our scheduled task
     schtasks /delete /f /tn "StrapStage2" | Out-Null
-    # Remove-Item "C:\strap2.ps1" | Out-Null
+    Remove-Item "C:\strap2.ps1" | Out-Null
 
     # Run the strap-after-setup scripts
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
