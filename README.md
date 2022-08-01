@@ -1,5 +1,45 @@
 # Strap
 
+A script to bootstrap a minimal macOS and Windows development system. Forked from [Mike McQuaid's Strap](https://github.com/MikeMcQuaid/strap). All changes to the macOS strap script have been kept to a minimum. There has been no attempt to modify the web service portion since I execute the strap scripts directly with the necessary arguments.
+
+## New Features
+
+- Added support for Windows (only tested on Windows 10 21H2)
+- Added support for a mobile phone number on the lock screen message
+- Added support for a 1Password signup URI used by my [dotfile](https://github.com/AdamYellen/dotfiles) strap-after-setup script
+
+## Usage
+
+### macOS
+
+```bash
+curl -o strap.sh https://raw.githubusercontent.com/AdamYellen/strap/master/bin/strap.sh
+STRAP_GIT_NAME="Adam Yellen" STRAP_GIT_EMAIL="<email>" STRAP_GITHUB_USER="AdamYellen" STRAP_GITHUB_TOKEN="<personal access token>" [STRAP_MOBILE="<number>"] [STRAP_OP_URI="<1Password URI>"] bash strap.sh
+```
+
+### Windows
+
+Open a PowerShell terminal as Administrator and run:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Force; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/AdamYellen/strap/master/bin/strap.ps1" -OutFile "C:\strap.ps1"
+C:\strap.ps1 -strap_git_name 'Adam Yellen' -strap_git_email '<email>' -strap_github_user 'AdamYellen' -strap_github_token '<personal access token>' [-strap_mobile '<number>'] [-strap_op_uri '<1Password URI>']
+```
+
+### Notes
+
+- On Windows the strap process requires a reboot, but before the reboot the script sets up a task to resume execution when the user logs in post-reboot. After the reboot, login and wait for the PowerShell terminal to open and the script will resume.
+- Retrieve your 1Password Signup URI:
+  - On macOS by opening 1Password, click on the Accounts menu, click on the account you want, select Set Up Another Device, and clicking Copy Link
+  - On Windows by opening 1Password, click on the account drop-down you want, select Set Up Another Device, and clicking Copy Link
+
+### Original README follows
+
+---
+---
+
+# Strap
+
 A script to bootstrap a minimal macOS development system. This does not assume you're doing Ruby/Rails/web development but installs the minimal set of software every macOS developer will want.
 
 ## Motivation

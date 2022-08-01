@@ -25,6 +25,7 @@ function AddToPath {
 function UpdateStoreApps {
     $wmiObj = Get-WmiObject -Namespace "root\cimv2\mdm\dmmap" -Class "MDM_EnterpriseModernAppManagement_AppManagement01"
     $wmiObj.UpdateScanMethod() | Out-Null
+    Start-Sleep -Seconds 30
     Remove-Variable wmiObj    
 }
 
@@ -224,7 +225,7 @@ else {
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
         Write-Host "Running dotfiles/script/strap-after-setup.ps1..." -ForegroundColor Yellow
         if ($strap_op_uri) {
-            & "$HOME/.dotfiles/script/strap-after-setup.ps1 -strap_op_uri '$strap_op_uri'"
+            & "$HOME/.dotfiles/script/strap-after-setup.ps1" -strap_op_uri '$strap_op_uri'
         }
         else {
             & "$HOME/.dotfiles/script/strap-after-setup.ps1"
