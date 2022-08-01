@@ -124,9 +124,8 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
         Write-Host "!! Exiting: Can't find git !!" -ForegroundColor "Red"
         Exit 1
     }
-    if((git config --system credential.helper) -ne "manager-core") {
-        git config --system credential.helper manager-core
-    }
+    git config --system credential.helper manager-core
+    git config --system core.autocrlf off
     if ($strap_git_name -and !(git config --global user.name)) {
         git config --global user.name "$strap_git_name"
     }
@@ -219,7 +218,9 @@ else {
 
     # Cleanup our scheduled task
     schtasks /delete /f /tn "StrapStage2" | Out-Null
-    Remove-Item "C:\strap2.ps1" | Out-Null
+    if (Test-Path "C:\strap2.ps1") {
+        Remove-Item "C:\strap2.ps1" | Out-Null
+    }
 
     # Run the strap-after-setup scripts
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
