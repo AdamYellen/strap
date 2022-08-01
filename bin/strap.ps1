@@ -154,11 +154,11 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
             if (Test-Path "$HOME/.dotfiles") {
                 Push-Location
                 Set-Location "$HOME/.dotfiles"
-                git pull --rebase --autostash | Out-Null
+                git pull -q --rebase --autostash | Out-Null
                 Pop-Location
             }
             else {
-                git clone "$DOTFILES_URL" "$HOME/.dotfiles" | Out-Null
+                git clone -q "$DOTFILES_URL" "$HOME/.dotfiles" | Out-Null
             }
         }
 
