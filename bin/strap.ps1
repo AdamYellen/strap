@@ -219,13 +219,13 @@ else {
 
     # Cleanup our scheduled task
     schtasks /delete /f /tn "StrapStage2" | Out-Null
-    Remove-Item "C:\strap2.ps1" | Out-Null
+    # Remove-Item "C:\strap2.ps1" | Out-Null
 
     # Run the strap-after-setup scripts
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
         Write-Host "Running dotfiles/script/strap-after-setup.ps1..." -ForegroundColor Yellow
         if ($strap_op_uri) {
-            & "$HOME/.dotfiles/script/strap-after-setup.ps1" -strap_op_uri '$strap_op_uri'
+            & "$HOME/.dotfiles/script/strap-after-setup.ps1" -strap_op_uri "$strap_op_uri"
         }
         else {
             & "$HOME/.dotfiles/script/strap-after-setup.ps1"
