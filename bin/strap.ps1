@@ -220,10 +220,10 @@ else {
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
         Write-Host "Running dotfiles/script/strap-after-setup.ps1..." -ForegroundColor Yellow
         if ($strap_op_uri) {
-            & "$HOME/.dotfiles/script/strap-after-setup.ps1" -strap_op_uri "$strap_op_uri"
+            & "$HOME/.dotfiles/script/strap-after-setup.ps1" -strap_op_uri "$strap_op_uri" | Out-Null
         }
         else {
-            & "$HOME/.dotfiles/script/strap-after-setup.ps1"
+            & "$HOME/.dotfiles/script/strap-after-setup.ps1" | Out-Null
         }
     }
 
@@ -235,7 +235,7 @@ else {
     foreach ($Item in $ItemList) {
         $Acl = $null
         # Get the ACL from the item
-        $Acl = Get-Acl -Path $Item.FullName
+        $Acl = Get-Acl -Path $Item.FullName -ErrorAction SilentlyContinue | Out-Null
         if ($Acl) {
             # Update the in-memory ACL
             $Acl.SetOwner($Account)
