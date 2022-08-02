@@ -108,7 +108,7 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
     ###############################################################################
     Write-Host "Installing dependencies..." -ForegroundColor "Yellow"
 
-    # Install Scoop
+    # Install Scoop since winget isn't available until the MSStore apps are updated
     if (-not (Check-Command -cmdname 'scoop')) {
         iex "& {$(irm get.scoop.sh)} -RunAsAdmin" | Out-Null
     }
@@ -216,12 +216,6 @@ else {
     ###############################################################################
     Write-Host "Continue strapping..." -ForegroundColor "Yellow"
 
-    # Cleanup our scheduled task
-    schtasks /delete /f /tn "StrapStage2" | Out-Null
-    if (Test-Path "C:\strap2.ps1") {
-        Remove-Item "C:\strap2.ps1" | Out-Null
-    }
-
     # Run the strap-after-setup scripts
     if (Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1") {
         Write-Host "Running dotfiles/script/strap-after-setup.ps1..." -ForegroundColor Yellow
@@ -233,9 +227,34 @@ else {
         }
     }
 
-    
+    # Fix ownership
+    Write-Host "Fixing ownership..." -ForegroundColor "Yellow"
+    $whoami = & whoami.exe
+    $Account = New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList "$whoami"
+    $ItemList = Get-ChildItem -Path "$HOME" -Recurse -Force -ErrorAction SilentlyContinue
+    foreach ($Item in $ItemList) {
+        $Acl = $null
+        # Get the ACL from the item
+        $Acl = Get-Acl -Path $Item.FullName
+        if ($Acl) {
+            # Update the in-memory ACL
+            $Acl.SetOwner($Account)
+            # Set the updated ACL on the target item
+            Set-Acl -Path $Item.FullName -AclObject $Acl -ErrorAction SilentlyContinue | Out-Null
+        }
+    }                
 
     # Clear our Powershell history
+    if (Test-Path "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt") {
+        Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt" -Force | Out-Null
+    }
+    Clear-History | Out-Null
 
+    # Cleanup our scheduled task
+    schtasks /delete /f /tn "StrapStage2" | Out-Null
+    if (Test-Path "C:\strap2.ps1") {
+        Remove-Item "C:\strap2.ps1" -Force | Out-Null
+    }
+    
     Write-Host "Your system is now Strap'd!" -ForegroundColor "Green"
 }
