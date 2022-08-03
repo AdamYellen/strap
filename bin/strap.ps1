@@ -41,9 +41,6 @@ if ((-Not $strap_stage) -Or ($strap_stage -Lt 2))
     ###############################################################################
     Write-Host "Configuring System..." -ForegroundColor "Yellow"
 
-    # Tell Windows Store to update now so it *might* complete before we reboot
-    UpdateStoreApps
-
     ## Set DisplayName for my account. Use only if you are not using a Microsoft Account
     if ($strap_git_name) {
         $myIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -194,7 +191,7 @@ powershell.exe -NoExit -File $stage2CLI
     ###############################################################################
     Write-Host "Checking for Windows updates..." -ForegroundColor Yellow
 
-    # Give the MS Store one more chance to update
+    # Update store apps
     UpdateStoreApps
 
     # Windows updates
@@ -231,18 +228,18 @@ else {
     Write-Host "Fixing ownership..." -ForegroundColor "Yellow"
     $whoami = & whoami.exe
     $Account = New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList "$whoami"
-    $ItemList = Get-ChildItem -Path "$HOME" -Recurse -Force -ErrorAction SilentlyContinue
+    $ItemList = Get-ChildItem -Path "$HOME" -Recurs -Force -ErrorAction SilentlyContinue
     foreach ($Item in $ItemList) {
         $Acl = $null
         # Get the ACL from the item
-        $Acl = Get-Acl -Path $Item.FullName -ErrorAction SilentlyContinue | Out-Null
+        $Acl = Get-Acl -Path $Item.FullName -ErrorAction SilentlyContinue
         if ($Acl) {
             # Update the in-memory ACL
             $Acl.SetOwner($Account)
             # Set the updated ACL on the target item
-            Set-Acl -Path $Item.FullName -AclObject $Acl -ErrorAction SilentlyContinue | Out-Null
+            Set-Acl -Path $Item.FullName -AclObject $Acl -ErrorAction SilentlyContinue
         }
-    }                
+    }
 
     # Clear our Powershell history
     if (Test-Path "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt") {
