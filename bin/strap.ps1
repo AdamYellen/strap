@@ -261,7 +261,7 @@ else
 
     # Fix ownership
     Write-Host "Fixing ownership..." -ForegroundColor "Yellow"
-    takeown /r /d Y /f "$HOME" | Out-Null
+    #takeown /r /d Y /f "$HOME" | Out-Null
 
     # Clear our Powershell history
     if(Test-Path "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt")
