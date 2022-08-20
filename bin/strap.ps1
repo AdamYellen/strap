@@ -261,22 +261,7 @@ else
 
     # Fix ownership
     Write-Host "Fixing ownership..." -ForegroundColor "Yellow"
-    $whoami = & whoami.exe
-    $Account = New-Object -TypeName System.Security.Principal.NTAccount -ArgumentList "$whoami"
-    $ItemList = Get-ChildItem -Path "$HOME" -Recurs -Force -ErrorAction SilentlyContinue
-    foreach($Item in $ItemList)
-    {
-        $Acl = $null
-        # Get the ACL from the item
-        $Acl = Get-Acl -Path "$Item.FullName" -ErrorAction SilentlyContinue
-        if($Acl)
-        {
-            # Update the in-memory ACL
-            $Acl.SetOwner($Account)
-            # Set the updated ACL on the target item
-            Set-Acl -Path "$Item.FullName" -AclObject $Acl -ErrorAction SilentlyContinue
-        }
-    }
+    takeown /r /d Y /f "$HOME" | Out-Null
 
     # Clear our Powershell history
     if(Test-Path "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt")
