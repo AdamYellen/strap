@@ -143,6 +143,7 @@ if((-not $strap_stage) -or ($strap_stage -lt 2))
     }
     git config --system credential.helper manager-core
     git config --system core.autocrlf off
+    git config --system core.symlinks true
     if($strap_git_name -and !(git config --global user.name))
     {
         git config --global user.name "$strap_git_name"
@@ -245,6 +246,13 @@ else
     ###############################################################################
     Write-Host "Continue strapping..." -ForegroundColor "Yellow"
 
+    # Cleanup our scheduled task
+    schtasks /delete /f /tn "StrapStage2" | Out-Null
+    if(Test-Path "C:\strap2.ps1")
+    {
+        Remove-Item "C:\strap2.ps1" -Force | Out-Null
+    }
+    
     # Run the strap-after-setup scripts
     if(Test-Path "$HOME/.dotfiles/script/strap-after-setup.ps1")
     {
@@ -269,13 +277,6 @@ else
         Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\$($host.Name)_history.txt" -Force | Out-Null
     }
     Clear-History | Out-Null
-
-    # Cleanup our scheduled task
-    schtasks /delete /f /tn "StrapStage2" | Out-Null
-    if(Test-Path "C:\strap2.ps1")
-    {
-        Remove-Item "C:\strap2.ps1" -Force | Out-Null
-    }
     
     Write-Host "Your system is now Strap'd!" -ForegroundColor "Green"
 }

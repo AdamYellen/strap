@@ -3,6 +3,9 @@
 #/ Install development dependencies on macOS.
 set -e
 
+# TODO:
+# strap-after-setup won't accept input unless run w/ --debug
+
 [[ $1 == "--debug" || -o xtrace ]] && STRAP_DEBUG="1"
 STRAP_SUCCESS=""
 
