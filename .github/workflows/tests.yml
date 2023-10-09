@@ -6,20 +6,21 @@ on:
   pull_request:
 jobs:
   style:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Set up Git repository
         uses: actions/checkout@main
 
-      - name: Install shfmt
-        run: |
-          brew update
-          brew install shfmt
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@master
         with:
           bundler-cache: true
+
+      - name: Install shfmt
+        run: brew install shfmt
 
       - run: script/style
 
@@ -28,6 +29,9 @@ jobs:
     steps:
       - name: Set up Git repository
         uses: actions/checkout@main
+
+      - name: Set up Homebrew to install from API
+        run: echo HOMEBREW_NO_INSTALL_FROM_API= >> "$GITHUB_ENV"
 
       - run: brew test-bot --only-cleanup-before
 
@@ -83,7 +87,7 @@ jobs:
 
       - name: Build and tag Docker image
         run: |
-          docker build --tag strap .
+          docker build --build-arg RUBY_VERSION=$(cat .ruby-version) --tag strap .
           docker tag strap mikemcquaid/strap:master
           docker tag strap ghcr.io/mikemcquaid/strap:master
 

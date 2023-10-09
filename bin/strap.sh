@@ -78,7 +78,7 @@ sudo_init() {
   fi
 
   # If TouchID for sudo is setup: use that instead.
-  if grep -q pam_tid /etc/pam.d/sudo; then
+  if grep -q pam_tid /etc/pam.d/sudo /etc/pam.d/sudo_local 2>/dev/null; then
     return
   fi
 
@@ -189,8 +189,17 @@ caffeinate -s -w $$ &
 # shellcheck disable=SC2010
 if ls /usr/lib/pam | grep $Q "pam_tid.so"; then
   logn "Configuring sudo authentication using TouchID:"
-  PAM_FILE="/etc/pam.d/sudo"
-  FIRST_LINE="# sudo: auth account password session"
+  if [[ -f /etc/pam.d/sudo_local || -f /etc/pam.d/sudo_local.template ]]; then
+    # New in macOS Sonoma, survives updates.
+    PAM_FILE="/etc/pam.d/sudo_local"
+    FIRST_LINE="# sudo_local: local config file which survives system update and is included for sudo"
+    if [[ ! -f "/etc/pam.d/sudo_local" ]]; then
+      echo "$FIRST_LINE" | sudo_askpass tee "$PAM_FILE" >/dev/null
+    fi
+  else
+    PAM_FILE="/etc/pam.d/sudo"
+    FIRST_LINE="# sudo: auth account password session"
+  fi
   if grep $Q pam_tid.so "$PAM_FILE"; then
     logk
   elif ! head -n1 "$PAM_FILE" | grep $Q "$FIRST_LINE"; then
@@ -239,8 +248,8 @@ elif [ -n "$STRAP_CI" ]; then
 elif [ -n "$STRAP_INTERACTIVE" ]; then
   echo
   log "Enabling full-disk encryption on next reboot:"
-  sudo_askpass fdesetup enable -user "$USER" \
-    | tee ~/Desktop/"FileVault Recovery Key.txt"
+  sudo_askpass fdesetup enable -user "$USER" |
+    tee ~/Desktop/"FileVault Recovery Key.txt"
   logk
 else
   echo
@@ -253,12 +262,12 @@ if ! [ -f "/Library/Developer/CommandLineTools/usr/bin/git" ]; then
   CLT_PLACEHOLDER="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
   sudo_askpass touch "$CLT_PLACEHOLDER"
 
-  CLT_PACKAGE=$(softwareupdate -l \
-    | grep -B 1 "Command Line Tools" \
-    | awk -F"*" '/^ *\*/ {print $2}' \
-    | sed -e 's/^ *Label: //' -e 's/^ *//' \
-    | sort -V \
-    | tail -n1)
+  CLT_PACKAGE=$(softwareupdate -l |
+    grep -B 1 "Command Line Tools" |
+    awk -F"*" '/^ *\*/ {print $2}' |
+    sed -e 's/^ *Label: //' -e 's/^ *//' |
+    sort -V |
+    tail -n1)
   sudo_askpass softwareupdate -i "$CLT_PACKAGE"
   sudo_askpass rm -f "$CLT_PLACEHOLDER"
   if ! [ -f "/Library/Developer/CommandLineTools/usr/bin/git" ]; then
@@ -310,16 +319,16 @@ fi
 # Setup GitHub HTTPS credentials.
 if git credential-osxkeychain 2>&1 | grep $Q "git.credential-osxkeychain"; then
   # Actually execute the credential in case it's a wrapper script for credential-osxkeychain
-  if git "credential-$(git config --global credential.helper 2>/dev/null)" 2>&1 \
-    | grep -v $Q "git.credential-osxkeychain"; then
+  if git "credential-$(git config --global credential.helper 2>/dev/null)" 2>&1 |
+    grep -v $Q "git.credential-osxkeychain"; then
     git config --global credential.helper osxkeychain
   fi
 
   if [ -n "$STRAP_GITHUB_USER" ] && [ -n "$STRAP_GITHUB_TOKEN" ]; then
     printf 'protocol=https\nhost=github.com\n' | git credential reject
     printf 'protocol=https\nhost=github.com\nusername=%s\npassword=%s\n' \
-      "$STRAP_GITHUB_USER" "$STRAP_GITHUB_TOKEN" \
-      | git credential approve
+      "$STRAP_GITHUB_USER" "$STRAP_GITHUB_TOKEN" |
+      git credential approve
   fi
 fi
 logk
@@ -369,15 +378,6 @@ logk
 export PATH="$HOMEBREW_PREFIX/bin:$PATH"
 logn "Updating Homebrew:"
 brew update --quiet
-logk
-
-# Install Homebrew Bundle, Cask and Services tap.
-log "Installing Homebrew taps and extensions:"
-brew bundle --quiet --file=- <<RUBY
-tap "homebrew/cask"
-tap "homebrew/core"
-tap "homebrew/services"
-RUBY
 logk
 
 # Check and install any remaining software updates.
@@ -440,7 +440,7 @@ fi
 # Install from local Brewfile
 if [ -f "$HOME/.Brewfile" ]; then
   log "Installing from user Brewfile on GitHub:"
-  brew bundle check --global || brew bundle --global
+  brew bundle check --global &>/dev/null || brew bundle --global
   logk
 fi
 
