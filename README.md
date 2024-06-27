@@ -4,7 +4,7 @@ A script to bootstrap a minimal macOS and Windows development system. Forked fro
 
 ## New Features
 
-- Added support for Windows (only tested on Windows 10 21H2)
+- Added support for Windows 11 which relies on [UnattendedWinstall](https://github.com/memstechtips/UnattendedWinstall) to install a de-bloated blank canvas
 - Added support for a mobile phone number on the lock screen message
 - Added support for a 1Password signup URI used by my [dotfile](https://github.com/AdamYellen/dotfiles) strap-after-setup script
 
@@ -19,16 +19,17 @@ STRAP_GIT_NAME="Adam Yellen" STRAP_GIT_EMAIL="<email>" STRAP_GITHUB_USER="AdamYe
 
 ### Windows
 
+Follow the directions in the [UnattendedWinstall README](https://github.com/AdamYellen/UnattendedWinstall/README.md) to install de-bloated Windows 11
+
 Open a PowerShell terminal as Administrator and run:
 
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Force; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/AdamYellen/strap/master/bin/strap.ps1" -OutFile "C:\strap.ps1"
-C:\strap.ps1 -strap_git_name 'Adam Yellen' -strap_git_email '<email>' -strap_github_user 'AdamYellen' -strap_github_token '<personal access token>' [-strap_mobile '<number>'] [-strap_op_uri '<1Password URI>']
+C:\strap.ps1 -strap_git_name 'Adam Yellen' -strap_git_email '<email>' -strap_github_user 'AdamYellen' [-strap_github_token '<personal access token>'] [-strap_mobile '<number>'] [-strap_op_uri '<1Password URI>']
 ```
 
 ### Notes
 
-- On Windows the strap process requires a reboot, but before the reboot the script sets up a task to resume execution when the user logs in post-reboot. After the reboot, login and wait for the PowerShell terminal to open and the script will resume.
 - Retrieve your 1Password Signup URI:
   - On macOS by opening 1Password, click on the Accounts menu, click on the account you want, select Set Up Another Device, and clicking Copy Link
   - On Windows by opening 1Password, click on the account drop-down you want, select Set Up Another Device, and clicking Copy Link
