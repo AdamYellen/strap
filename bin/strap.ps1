@@ -24,6 +24,37 @@ function AddToPath
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 
+function RefreshEnv
+{
+   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+$gitinf = @"
+[Setup]
+Lang=default
+Dir=C:\Program Files\Git
+Group=Git
+NoIcons=0
+SetupType=default
+Components=gitlfs
+Tasks=
+EditorOption=VisualStudioCode
+CustomEditorPath=
+DefaultBranchOption=main
+PathOption=Cmd
+SSHOption=OpenSSH
+TortoiseOption=false
+CURLOption=WinSSL
+CRLFOption=CRLFCommitAsIs
+BashTerminalOption=ConHost
+GitPullBehaviorOption=Merge
+UseCredentialManager=Enabled
+PerformanceTweaksFSCache=Enabled
+EnableSymlinks=Enabled
+EnablePseudoConsoleSupport=Disabled
+EnableFSMonitor=Disabled
+"@
+
 ###############################################################################
 ### Security and Identity                                                     #
 ###############################################################################
@@ -81,7 +112,12 @@ if(-not (CheckCommand -cmdname 'git'))
         . $ENV:TEMP\winget-install.ps1 | Out-Null
     }
 
-    winget install Git.Git | Out-Null
+    $git_install_inf = "$ENV:TEMP\git.inf"
+    $gitinf | Out-File -FilePath $git_install_inf
+    $git_install_args = "/SP- /VERYSILENT /SUPPRESSMSGBOXES /NOCANCEL /NORESTART /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /LOADINF=""$git_install_inf"""
+    winget install Git.Git --override "$git_install_args" | Out-Null
+    Remove-Item -Path $git_install_inf -Force
+    RefreshEnv
 }
 
 # Setup Git configuration
