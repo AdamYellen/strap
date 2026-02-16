@@ -10,7 +10,7 @@ set -e
 STRAP_SUCCESS=""
 
 sudo_askpass() {
-  if [ -n "$SUDO_ASKPASS" ]; then
+  if [ -n "$STRAP_SUDO_ASKPASS" ]; then
     sudo --askpass "$@"
   else
     sudo "$@"
@@ -19,7 +19,7 @@ sudo_askpass() {
 
 cleanup() {
   set +e
-  sudo_askpass rm -rf "$CLT_PLACEHOLDER" "$SUDO_ASKPASS" "$SUDO_ASKPASS_DIR"
+  sudo_askpass rm -rf "$CLT_PLACEHOLDER" "$STRAP_SUDO_ASKPASS" "$STRAP_SUDO_ASKPASS_DIR"
   sudo --reset-timestamp
   if [ -z "$STRAP_SUCCESS" ]; then
     if [ -n "$STRAP_STEP" ]; then
@@ -104,20 +104,20 @@ echo "$SUDO_PASSWORD"
 BASH
     )"
     unset SUDO_PASSWORD
-    SUDO_ASKPASS_DIR="$(mktemp -d)"
-    SUDO_ASKPASS="$(mktemp "$SUDO_ASKPASS_DIR"/strap-askpass-XXXXXXXX)"
-    chmod 700 "$SUDO_ASKPASS_DIR" "$SUDO_ASKPASS"
-    bash -c "cat > '$SUDO_ASKPASS'" <<<"$SUDO_PASSWORD_SCRIPT"
+    STRAP_SUDO_ASKPASS_DIR="$(mktemp -d)"
+    STRAP_SUDO_ASKPASS="$(mktemp "$STRAP_SUDO_ASKPASS_DIR"/strap-askpass-XXXXXXXX)"
+    chmod 700 "$STRAP_SUDO_ASKPASS_DIR" "$STRAP_SUDO_ASKPASS"
+    bash -c "cat > '$STRAP_SUDO_ASKPASS'" <<<"$SUDO_PASSWORD_SCRIPT"
     unset SUDO_PASSWORD_SCRIPT
     reset_debug
 
-    export SUDO_ASKPASS
+    export STRAP_SUDO_ASKPASS
   fi
 }
 
 sudo_refresh() {
   clear_debug
-  if [ -n "$SUDO_ASKPASS" ]; then
+  if [ -n "$STRAP_SUDO_ASKPASS" ]; then
     sudo --askpass --validate
   else
     sudo_init
